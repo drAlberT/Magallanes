@@ -7,6 +7,9 @@ use Mage\Task\SkipException;
 use Mage\Task\Releases\IsReleaseAware;
 use Mage\Console;
 
+/**
+ * @author Emiliano 'AlberT' Gabrielli <emiliano.gabrielli@gmail.com>
+ */
 class SetFacls extends AbstractTask implements IsReleaseAware
 {
     /**
@@ -31,35 +34,35 @@ class SetFacls extends AbstractTask implements IsReleaseAware
         $releasesDirectory = $this->getConfig()->release('directory', 'releases');
         $currentCopy = $releasesDirectory.'/'.$this->getConfig()->getReleaseId();
 
-        $users = (array) $this->getParameter('users');
-        $groups = (array) $this->getParameter('groups');
+        $users = (array)$this->getParameter('users');
+        $groups = (array)$this->getParameter('groups');
         if (!$users && !$groups) {
             throw new SkipException('You have to specify "users" or "groups".');
         }
 
-        $folders = (array) $this->getParameter('folders');
+        $folders = (array)$this->getParameter('folders');
         if (!$folders) {
             throw new SkipException('Missing parameter: "folders".');
         }
 
         $recursive = $this->getParameter('recursive', false) ? ' -R ' : ' ';
 
-        $params = (array) $this->getParameter('parameters');
+        $params = (array)$this->getParameter('parameters');
 
         $users_str = '';
-        foreach ($users as $u => $perms) {
+        foreach ($users as $user => $perms) {
             if (!preg_match('~^[rwxX]{1,3}$~', $perms)) {
                 throw new SkipException('Unsupported value for "permission" parameter: "'.$perms.'".');
             }
-            $users_str .= sprintf(' -m u:%s:%s', $u, $perms);
+            $users_str .= sprintf(' -m u:%s:%s', $user, $perms);
         }
 
         $groups_str = '';
-        foreach ($groups as $g => $perms) {
+        foreach ($groups as $group => $perms) {
             if (!preg_match('~^[rwxX]{1,3}$~', $perms)) {
-                throw new SkipException('Unsupported value for "permission" parameter: "'.$perms.'".');
+            	throw new SkipException('Unsupported value for "permission" parameter: "'.$perms.'".');
             }
-            $groups_str .= sprintf(' -m g:%s:%s', $g, $perms);
+            $groups_str .= sprintf(' -m g:%s:%s', $group, $perms);
         }
 
         $params_str = '';
@@ -67,14 +70,13 @@ class SetFacls extends AbstractTask implements IsReleaseAware
             $params_str .= ' '.$p;
         }
 
-		$result = 0;
+	$result = 0;
         $cmd_str = "sudo setfacl $params_str $recursive $users_str $groups_str";
-		foreach ($folders as $folder) {
-			$command = sprintf('%s %s/%s', $cmd_str, $currentCopy, $folder);
-			$result += $this->runCommandRemote($command, $output);
-			Console::log($command.' -> '.($result)?'OK':'FAIL');
-		}
+	foreach ($folders as $folder) {
+		$command = sprintf('%s %s/%s', $cmd_str, $currentCopy, $folder);
+		$result += $this->runCommandRemote($command, $output);
+	}
 
-		return (bool)$result;
+	return (bool)$result;
     }
 }
