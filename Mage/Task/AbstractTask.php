@@ -180,6 +180,8 @@ abstract class AbstractTask
      */
     final protected function runCommandRemote($command, &$output = null, $cdToDirectoryFirst = true)
     {
+        $cmdString = $this->getConfig()->release('use-sudo', false) ? 'sudo -- sh -c \'%s\'' : '%s';
+
         if ($this->getConfig()->release('enabled', false) === true) {
             if ($this instanceof IsReleaseAware) {
                 $releasesDirectory = '';
@@ -193,9 +195,9 @@ abstract class AbstractTask
             $releasesDirectory = '';
         }
 
-        // if general.yml includes "ssy_needs_tty: true", then add "-t" to the ssh command
-        $ttyIsNeeded = $this->getConfig()->general('ssh_needs_tty', false)
-                        || $this->getConfig()->deployment('use-sudo', false);
+        // if general.yml includes "ssh_needs_tty: true", then add "-t" to the ssh command
+		$ttyIsNeeded = $this->getConfig()->general('ssh_needs_tty', false)
+			|| $this->getConfig()->deployment('use-sudo', false);
         $needs_tty = ($ttyIsNeeded ? '-t' : '');
 
         $localCommand = 'ssh ' . $this->getConfig()->getHostIdentityFileOption()
@@ -211,11 +213,7 @@ abstract class AbstractTask
                 . $releasesDirectory . ' && ' . $remoteCommand;
         }
 
-        if ($this->getConfig()->deployment('use-sudo', false) === true) {
-            $localCommand .= ' ' . '"sudo sh -c \"' . $remoteCommand . '\""';
-        } else {
-            $localCommand .= ' ' . '"sh -c \"' . $remoteCommand . '\""';
-        }
+		$localCommand .= ' ' . '"' . sprintf($cmdString, $remoteCommand) . '"';
 
         Console::log('Run remote command ' . $remoteCommand);
 

@@ -22,6 +22,13 @@ use Mage\Task\Releases\SkipOnOverride;
 class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
 {
     /**
+     * sudo command string, to execute privileged tasks
+     *
+     * string $sudo_cmd
+     */
+    private $sudo_cmd = '';
+
+    /**
      * (non-PHPdoc)
      * @see \Mage\Task\AbstractTask::getName()
      */
@@ -36,6 +43,7 @@ class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
      */
     public function run()
     {
+
         $resultFetch = false;
         if ($this->getConfig()->release('enabled', false) === true) {
             $releasesDirectory = $this->getConfig()->release('directory', 'releases');
@@ -84,11 +92,11 @@ class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
 
             // Switch symlink and change owner
             $tmplink = $symlink . '.tmp';
-            $command = "ln -sfn {$currentCopy} {$tmplink}";
+            $command = $this->sudo_cmd . "ln -sfn {$currentCopy} {$tmplink}";
             if ($resultFetch && $userGroup != '') {
-                $command.= " && chown -h {$userGroup} {$tmplink}";
+                $command .= " && chown -h {$userGroup} {$tmplink}";
             }
-            $command.= " && mv -fT {$tmplink} {$symlink}";
+            $command .= " && mv -fT {$tmplink} {$symlink}";
             $result = $this->runCommandRemote($command);
 
             if ($result) {
@@ -106,39 +114,43 @@ class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
      */
     protected function cleanUpReleases()
     {
+		$return = 0;
+        if (!$this->getConfig()->release('enabled', false)) {
+            return 0;
+        }
+
+        $symlink = $this->getConfig()->release('symlink', 'current');
+        $releasesDirectory = $this->getConfig()->release('directory', 'releases');
+        if (substr($symlink, 0, 1) == '/') {
+            $releasesDirectory = rtrim($this->getConfig()->deployment('to'), '/') . '/' . $releasesDirectory;
+        }
+
         // Count Releases
-        if ($this->getConfig()->release('enabled', false) === true) {
-            $releasesDirectory = $this->getConfig()->release('directory', 'releases');
-            $symlink = $this->getConfig()->release('symlink', 'current');
+        $maxReleases = $this->getConfig()->release('max', 0);
+        if ($maxReleases > 0) {
+            $releasesList = '';
+            $this->runCommandRemote('ls -1 ' . $releasesDirectory, $releasesList);
+            $releasesList = trim($releasesList);
 
-            if (substr($symlink, 0, 1) == '/') {
-                $releasesDirectory = rtrim($this->getConfig()->deployment('to'), '/') . '/' . $releasesDirectory;
-            }
+            if ('' != $releasesList) {
+                $releasesList = explode(PHP_EOL, $releasesList);
+                if (count($releasesList) > $maxReleases) {
+                    $releasesToDelete = array_diff($releasesList, array($this->getConfig()->getReleaseId()));
+                    sort($releasesToDelete);
+                    $releasesToDelete = array_slice($releasesToDelete, 0, count($releasesToDelete) - $maxReleases + 1);
 
-            $maxReleases = $this->getConfig()->release('max', false);
-            if (($maxReleases !== false) && ($maxReleases > 0)) {
-                $releasesList = '';
-                $countReleasesFetch = $this->runCommandRemote('ls -1 ' . $releasesDirectory, $releasesList);
-                $releasesList = trim($releasesList);
-
-                if ($countReleasesFetch && $releasesList != '') {
-                    $releasesList = explode(PHP_EOL, $releasesList);
-                    if (count($releasesList) > $maxReleases) {
-                        $releasesToDelete = array_diff($releasesList, array($this->getConfig()->getReleaseId()));
-                        sort($releasesToDelete);
-                        $releasesToDeleteCount = count($releasesToDelete) - $maxReleases;
-                        $releasesToDelete = array_slice($releasesToDelete, 0, $releasesToDeleteCount + 1);
-
-                        foreach ($releasesToDelete as $releaseIdToDelete) {
-                            $directoryToDelete = $releasesDirectory . '/' . $releaseIdToDelete;
-                            if ($directoryToDelete != '/') {
-                                $command = 'rm -rf ' . $directoryToDelete;
-                                $this->runCommandRemote($command);
-                            }
-                        }
+                    foreach ($releasesToDelete as $release) {
+                        $directoryToDelete = $releasesDirectory . '/' . $release;
+						if ($directoryToDelete == '/') { 
+							continue;
+						}
+						$command = $this->sudo_cmd . 'rm -rf ' . $directoryToDelete;
+						$return += $this->runCommandRemote($command);
                     }
                 }
             }
-        }
+		}
+
+		return $return;
     }
 }
