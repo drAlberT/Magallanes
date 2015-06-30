@@ -1,6 +1,6 @@
 {
     "name": "dralbert/magallanes",
-    "replace": "andres-montanez/magallanes",
+    "replace": ["andres-montanez/magallanes"],
     "description": "A Deployment Tool for PHP Applications",
     "homepage": "http://magephp.com",
     "license": "MIT",
