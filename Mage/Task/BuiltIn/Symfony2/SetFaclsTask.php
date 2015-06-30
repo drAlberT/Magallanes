@@ -10,7 +10,7 @@ use Mage\Console;
 /**
  * @author Emiliano 'AlberT' Gabrielli <emiliano.gabrielli@gmail.com>
  */
-class SetFacls extends AbstractTask implements IsReleaseAware
+class SetFaclsTask extends AbstractTask implements IsReleaseAware
 {
     /**
      * Returns the Title of the Task.
@@ -60,7 +60,7 @@ class SetFacls extends AbstractTask implements IsReleaseAware
         $groups_str = '';
         foreach ($groups as $group => $perms) {
             if (!preg_match('~^[rwxX]{1,3}$~', $perms)) {
-            	throw new SkipException('Unsupported value for "permission" parameter: "'.$perms.'".');
+                throw new SkipException('Unsupported value for "permission" parameter: "'.$perms.'".');
             }
             $groups_str .= sprintf(' -m g:%s:%s', $group, $perms);
         }
@@ -70,13 +70,13 @@ class SetFacls extends AbstractTask implements IsReleaseAware
             $params_str .= ' '.$p;
         }
 
-	$result = 0;
+        $result = 0;
         $cmd_str = "sudo setfacl $params_str $recursive $users_str $groups_str";
-	foreach ($folders as $folder) {
-		$command = sprintf('%s %s/%s', $cmd_str, $currentCopy, $folder);
-		$result += $this->runCommandRemote($command, $output);
-	}
+        foreach ($folders as $folder) {
+            $command = sprintf('%s %s/%s', $cmd_str, $currentCopy, $folder);
+            $result += $this->runCommandRemote($command, $output);
+        }
 
-	return (bool)$result;
+        return (bool)$result;
     }
 }

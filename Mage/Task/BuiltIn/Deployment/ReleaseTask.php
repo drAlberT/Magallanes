@@ -43,7 +43,6 @@ class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
      */
     public function run()
     {
-
         $resultFetch = false;
         if ($this->getConfig()->release('enabled', false) === true) {
             $releasesDirectory = $this->getConfig()->release('directory', 'releases');
@@ -114,7 +113,7 @@ class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
      */
     protected function cleanUpReleases()
     {
-		$return = 0;
+        $return = 0;
         if (!$this->getConfig()->release('enabled', false)) {
             return 0;
         }
@@ -141,16 +140,16 @@ class ReleaseTask extends AbstractTask implements IsReleaseAware, SkipOnOverride
 
                     foreach ($releasesToDelete as $release) {
                         $directoryToDelete = $releasesDirectory . '/' . $release;
-						if ($directoryToDelete == '/') { 
-							continue;
-						}
-						$command = $this->sudo_cmd . 'rm -rf ' . $directoryToDelete;
-						$return += $this->runCommandRemote($command);
+                        if ($directoryToDelete == '/') {
+                            continue;
+                        }
+                        $command = $this->sudo_cmd . 'rm -rf ' . $directoryToDelete;
+                        $return += $this->runCommandRemote($command);
                     }
                 }
             }
-		}
+        }
 
-		return $return;
+        return $return;
     }
 }

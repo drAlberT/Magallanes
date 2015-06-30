@@ -196,8 +196,8 @@ abstract class AbstractTask
         }
 
         // if general.yml includes "ssh_needs_tty: true", then add "-t" to the ssh command
-		$ttyIsNeeded = $this->getConfig()->general('ssh_needs_tty', false)
-			|| $this->getConfig()->deployment('use-sudo', false);
+        $ttyIsNeeded = $this->getConfig()->general('ssh_needs_tty', false)
+            || $this->getConfig()->deployment('use-sudo', false);
         $needs_tty = ($ttyIsNeeded ? '-t' : '');
 
         $localCommand = 'ssh ' . $this->getConfig()->getHostIdentityFileOption()
@@ -213,7 +213,7 @@ abstract class AbstractTask
                 . $releasesDirectory . ' && ' . $remoteCommand;
         }
 
-		$localCommand .= ' ' . '"' . sprintf($cmdString, $remoteCommand) . '"';
+        $localCommand .= ' ' . '"' . sprintf($cmdString, $remoteCommand) . '"';
 
         Console::log('Run remote command ' . $remoteCommand);
 
